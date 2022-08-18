@@ -15,7 +15,6 @@ const MOBILE_ICON_SIZE = 35;
 const DESKTOP_ICON_SIZE = 50;
 
 class ReactImageVideoLightbox extends React.Component {
-
   constructor(props) {
     super(props);
     this.state = {
@@ -35,9 +34,12 @@ class ReactImageVideoLightbox extends React.Component {
     this.handleTouchStart = this.handleTouchStart.bind(this);
     this.handleTouchMove = this.handleTouchMove.bind(this);
     this.handleTouchEnd = this.handleTouchEnd.bind(this);
-    this.onNavigationCallback = this.props.onNavigationCallback && typeof this.props.onNavigationCallback === 'function'
-      ? this.props.onNavigationCallback
-      : () => { };
+    this.onNavigationCallback =
+      this.props.onNavigationCallback &&
+      typeof this.props.onNavigationCallback === 'function'
+        ? this.props.onNavigationCallback
+        : () => {};
+    this.ref = React.createRef();
   }
 
   zoomTo(scale) {
@@ -45,7 +47,7 @@ class ReactImageVideoLightbox extends React.Component {
       if (this.state.scale === scale) return;
 
       const distance = scale - this.state.scale;
-      const targetScale = this.state.scale + (ANIMATION_SPEED * distance);
+      const targetScale = this.state.scale + ANIMATION_SPEED * distance;
 
       this.zoom(utils.settle(targetScale, scale, SETTLE_RANGE));
       this.animation = requestAnimationFrame(frame);
@@ -56,23 +58,35 @@ class ReactImageVideoLightbox extends React.Component {
 
   reset() {
     const frame = () => {
-      if (this.state.scale === INITIAL_SCALE && this.state.x === INITIAL_X && this.state.y === INITIAL_Y) return;
+      if (
+        this.state.scale === INITIAL_SCALE &&
+        this.state.x === INITIAL_X &&
+        this.state.y === INITIAL_Y
+      )
+        return;
 
       const scaleDelta = INITIAL_SCALE - this.state.scale;
-      const targetScale = utils.settle(this.state.scale + (RESET_ANIMATION_SPEED * scaleDelta), INITIAL_SCALE, SETTLE_RANGE);
+      const targetScale = utils.settle(
+        this.state.scale + RESET_ANIMATION_SPEED * scaleDelta,
+        INITIAL_SCALE,
+        SETTLE_RANGE
+      );
 
       const nextWidth = this.width * targetScale;
       const nextHeight = this.height * targetScale;
 
-      this.setState({
-        scale: targetScale,
-        width: nextWidth,
-        height: nextHeight,
-        x: INITIAL_X,
-        y: INITIAL_Y
-      }, () => {
-        this.animation = requestAnimationFrame(frame);
-      });
+      this.setState(
+        {
+          scale: targetScale,
+          width: nextWidth,
+          height: nextHeight,
+          x: INITIAL_X,
+          y: INITIAL_Y
+        },
+        () => {
+          this.animation = requestAnimationFrame(frame);
+        }
+      );
     };
 
     this.animation = requestAnimationFrame(frame);
@@ -95,7 +109,10 @@ class ReactImageVideoLightbox extends React.Component {
     if (this.state.scale > MAX_SCALE) return this.zoomTo(MAX_SCALE);
     if (this.state.scale < MIN_SCALE) return this.zoomTo(MIN_SCALE);
 
-    if (this.lastTouchEnd && this.lastTouchEnd + DOUBLE_TAP_THRESHOLD > event.timeStamp) {
+    if (
+      this.lastTouchEnd &&
+      this.lastTouchEnd + DOUBLE_TAP_THRESHOLD > event.timeStamp
+    ) {
       this.reset();
     }
 
@@ -110,7 +127,7 @@ class ReactImageVideoLightbox extends React.Component {
     var swipeDelta = event.changedTouches[0].clientX - this.swipeStartX;
     if (swipeDelta < -(this.width / 3)) {
       this.swipeRight();
-    } else if (swipeDelta > (this.width / 3)) {
+    } else if (swipeDelta > this.width / 3) {
       this.swipeLeft();
     } else {
       this.reset();
@@ -121,12 +138,15 @@ class ReactImageVideoLightbox extends React.Component {
     var currentIndex = this.state.index;
     if (currentIndex > 0) {
       setTimeout(() => {
-        this.setState({
-          index: currentIndex - 1,
-          swiping: false,
-          x: INITIAL_X,
-          loading: true
-        }, () => this.onNavigationCallback(currentIndex - 1));
+        this.setState(
+          {
+            index: currentIndex - 1,
+            swiping: false,
+            x: INITIAL_X,
+            loading: true
+          },
+          () => this.onNavigationCallback(currentIndex - 1)
+        );
       }, 500);
     } else {
       this.reset();
@@ -135,14 +155,17 @@ class ReactImageVideoLightbox extends React.Component {
 
   swipeRight() {
     var currentIndex = this.state.index;
-    if (currentIndex < (this.props.data.length - 1)) {
+    if (currentIndex < this.props.data.length - 1) {
       setTimeout(() => {
-        this.setState({
-          index: currentIndex + 1,
-          swiping: false,
-          x: INITIAL_X,
-          loading: true
-        }, () => this.onNavigationCallback(currentIndex + 1));
+        this.setState(
+          {
+            index: currentIndex + 1,
+            swiping: false,
+            x: INITIAL_X,
+            loading: true
+          },
+          () => this.onNavigationCallback(currentIndex + 1)
+        );
       }, 500);
     } else {
       this.reset();
@@ -184,7 +207,11 @@ class ReactImageVideoLightbox extends React.Component {
     const pointA = utils.getPointFromTouch(event.touches[0]);
     const pointB = utils.getPointFromTouch(event.touches[1]);
     const distance = utils.getDistanceBetweenPoints(pointA, pointB);
-    const scale = utils.between(MIN_SCALE - ADDITIONAL_LIMIT, MAX_SCALE + ADDITIONAL_LIMIT, this.state.scale * (distance / this.lastDistance));
+    const scale = utils.between(
+      MIN_SCALE - ADDITIONAL_LIMIT,
+      MAX_SCALE + ADDITIONAL_LIMIT,
+      this.state.scale * (distance / this.lastDistance)
+    );
     this.zoom(scale);
     this.lastDistance = distance;
   }
@@ -206,36 +233,48 @@ class ReactImageVideoLightbox extends React.Component {
     for (var i = 0; i < data.length; i++) {
       var resource = data[i];
       if (resource.type === 'photo') {
-        items.push(<img key={i}
-          alt={resource.altTag}
-          src={resource.url}
-          style={{
-            pointerEvents: this.state.scale === 1 ? 'auto' : 'none',
-            maxWidth: '100%',
-            maxHeight: '100%',
-            transform: `translate(${this.state.x}px, ${this.state.y}px) scale(${this.state.scale})`,
-            transition: 'transform 0.5s ease-out'
-          }}
-          onLoad={() => { this.setState({ loading: false }); }} />);
+        items.push(
+          <img
+            key={i}
+            alt={resource.altTag}
+            src={resource.url}
+            style={{
+              pointerEvents: this.state.scale === 1 ? 'auto' : 'none',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              transform: `translate(${this.state.x}px, ${this.state.y}px) scale(${this.state.scale})`,
+              transition: 'transform 0.5s ease-out'
+            }}
+            onLoad={() => {
+              this.setState({ loading: false });
+            }}
+          />
+        );
       }
 
       if (resource.type === 'video') {
-        items.push(<iframe key={i}
-          width="560"
-          height="315"
-          src={resource.url}
-          frameBorder="0"
-          allow="autoplay; encrypted-media"
-          title={resource.title}
-          allowFullScreen
-          style={{
-            pointerEvents: this.state.scale === 1 ? 'auto' : 'none',
-            maxWidth: '100%',
-            maxHeight: '100%',
-            transform: `translate(${this.state.x}px, ${this.state.y}px)`,
-            transition: 'transform 0.5s ease-out'
-          }}
-          onLoad={() => { this.setState({ loading: false }); }}></iframe>);
+        items.push(
+          <iframe
+            key={i}
+            width="560"
+            height="315"
+            src={resource.url}
+            frameBorder="0"
+            allow="autoplay; encrypted-media"
+            title={resource.title}
+            allowFullScreen
+            style={{
+              pointerEvents: this.state.scale === 1 ? 'auto' : 'none',
+              maxWidth: '100%',
+              maxHeight: '100%',
+              transform: `translate(${this.state.x}px, ${this.state.y}px)`,
+              transition: 'transform 0.5s ease-out'
+            }}
+            onLoad={() => {
+              this.setState({ loading: false });
+            }}
+          ></iframe>
+        );
       }
     }
 
@@ -265,57 +304,80 @@ class ReactImageVideoLightbox extends React.Component {
   render() {
     var resources = this.getResources();
     return (
-      <div
-        onTouchStart={this.handleTouchStart}
-        onTouchMove={this.handleTouchMove}
-        onTouchEnd={this.handleTouchEnd}
-        style={{
-          top: '0px',
-          left: '0px',
-          overflow: 'hidden',
-          position: 'fixed',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          flexDirection: 'row',
-          height: '100%',
-          width: '100%',
-          backgroundColor: 'rgba(0,0,0,1)'
-        }}>
+      <>
+        <div
+          className="ReactImageVideoLightbox__backdrop"
+          style={{
+            width: '100vw',
+            height: '100vh',
+            top: 0,
+            left: 0,
+            background: 'rgba(0, 0, 0,.8)',
+            position: 'fixed',
+            zIndex: 10000
+          }}
+          onClick={this.props.onCloseCallback}
+        />
+        <div
+          onTouchStart={this.handleTouchStart}
+          onTouchMove={this.handleTouchMove}
+          onTouchEnd={this.handleTouchEnd}
+          ref={this.ref}
+          style={{
+            top: '0px',
+            left: '0px',
+            overflow: 'hidden',
+            position: 'fixed',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexDirection: 'row',
+            height: '100%',
+            width: '100%',
+            zIndex: 10001
+          }}
+          onClick={this.props.onCloseCallback}
+        >
+          {this.props.showResourceCount && (
+            <div
+              style={{
+                position: 'absolute',
+                top: '0px',
+                left: '0px',
+                padding: '15px',
+                color: 'white',
+                fontWeight: 'bold'
+              }}
+            >
+              <span>{this.state.index + 1}</span> /{' '}
+              <span>{this.props.data.length}</span>
+            </div>
+          )}
 
-        {
-          this.props.showResourceCount &&
           <div
             style={{
               position: 'absolute',
               top: '0px',
-              left: '0px',
-              padding: '15px',
-              color: 'white',
-              fontWeight: 'bold'
-            }}>
-            <span>{this.state.index + 1}</span> / <span>{this.props.data.length}</span>
+              right: '0px',
+              padding: '10px',
+              color: '#FFFFFF',
+              cursor: 'pointer',
+              fontSize: `${this.state.iconSize * 0.8}px`
+            }}
+            onClick={this.props.onCloseCallback}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              height="36px"
+              viewBox="0 0 24 24"
+              width="36px"
+              fill="#FFFFFF"
+            >
+              <path d="M0 0h24v24H0z" fill="none" />
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+            </svg>
           </div>
-        }
-
-        <div
-          style={{
-            position: 'absolute',
-            top: '0px',
-            right: '0px',
-            padding: '10px',
-            color: '#FFFFFF',
-            cursor: 'pointer',
-            fontSize: `${this.state.iconSize * 0.8}px`
-          }}
-          onClick={this.props.onCloseCallback}>
-          <svg xmlns="http://www.w3.org/2000/svg" height="36px" viewBox="0 0 24 24" width="36px" fill="#FFFFFF">
-            <path d="M0 0h24v24H0z" fill="none" />
-            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-          </svg>
-        </div>
-        {
-          (this.state.index + 1 != 1) ?
+          {this.state.index + 1 != 1 ? (
             <div
               style={{
                 position: 'absolute',
@@ -325,17 +387,25 @@ class ReactImageVideoLightbox extends React.Component {
                 cursor: 'pointer',
                 fontSize: `${this.state.iconSize}px`
               }}
-              onClick={() => { this.swipeLeft(); }}>
-              <svg xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 0 24 24" width="48px" fill="#FFFFFF">
+              onClick={() => {
+                this.swipeLeft();
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="48px"
+                viewBox="0 0 24 24"
+                width="48px"
+                fill="#FFFFFF"
+              >
                 <path d="M0 0h24v24H0z" fill="none" />
                 <path d="M15.41 7.41L14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
               </svg>
             </div>
-            :
+          ) : (
             <></>
-        }
-        {
-          (this.state.index + 1 != this.props.data.length) ?
+          )}
+          {this.state.index + 1 != this.props.data.length ? (
             <div
               style={{
                 position: 'absolute',
@@ -345,47 +415,54 @@ class ReactImageVideoLightbox extends React.Component {
                 cursor: 'pointer',
                 fontSize: `${this.state.iconSize}px`
               }}
-              onClick={() => { this.swipeRight(); }}>
-              <svg xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 0 24 24" width="48px" fill="#FFFFFF">
+              onClick={() => {
+                this.swipeRight();
+              }}
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                height="48px"
+                viewBox="0 0 24 24"
+                width="48px"
+                fill="#FFFFFF"
+              >
                 <path d="M0 0h24v24H0z" fill="none" />
                 <path d="M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z" />
               </svg>
             </div>
-            :
+          ) : (
             <></>
-        }
-        {
-          this.state.loading &&
-          <div style={{ margin: 'auto', position: 'fixed' }}>
-            <style>
-              {
-                `@keyframes react_image_video_spinner {
+          )}
+          {this.state.loading && (
+            <div style={{ margin: 'auto', position: 'fixed' }}>
+              <style>
+                {`@keyframes react_image_video_spinner {
                   0% {
                     transform: translate3d(-50 %, -50 %, 0) rotate(0deg);
                   }
                   100% {
                     transform: translate3d(-50%, -50%, 0) rotate(360deg);
                   }
-                }`
-              }
-            </style>
-            <div style={{
-              animation: '1.0s linear infinite react_image_video_spinner',
-              border: 'solid 5px #ffffff',
-              borderBottomColor: '#cfd0d1',
-              borderRadius: '50%',
-              height: 30,
-              width: 30,
-              position: 'fixed',
-              transform: 'translate3d(-50%, -50%, 0)',
-            }}></div>
-          </div>
-        }
+                }`}
+              </style>
+              <div
+                style={{
+                  animation: '1.0s linear infinite react_image_video_spinner',
+                  border: 'solid 5px #ffffff',
+                  borderBottomColor: '#cfd0d1',
+                  borderRadius: '50%',
+                  height: 30,
+                  width: 30,
+                  position: 'fixed',
+                  transform: 'translate3d(-50%, -50%, 0)'
+                }}
+              ></div>
+            </div>
+          )}
 
-        {
-          resources[this.state.index]
-        }
-      </div>
+          {resources[this.state.index]}
+        </div>
+      </>
     );
   }
 }
